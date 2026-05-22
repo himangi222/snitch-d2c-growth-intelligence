@@ -2,113 +2,54 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# PAGE CONFIG
 st.set_page_config(
-    page_title="Snitch Growth Dashboard",
+    page_title="Snitch Dashboard",
     layout="wide"
 )
 
-# TITLE
-st.title("Snitch Growth Intelligence Dashboard")
+st.title("Snitch D2C Growth Dashboard")
 
-# DATABASE CONNECTION
-
-
-# SQL QUERY
-
+# Load CSV directly
 df = pd.read_csv("funnel_data.csv")
 
-df = df.groupby("category").agg({
+# Group metrics
+summary = df.groupby("category").agg({
     "viewed_pdp": "sum",
     "added_to_cart": "sum",
     "purchased": "sum"
 }).reset_index()
 
-df.rename(columns={
-    "viewed_pdp": "pdp_views",
-    "added_to_cart": "carts",
-    "purchased": "purchases"
+summary.rename(columns={
+    "viewed_pdp": "PDP Views",
+    "added_to_cart": "Cart Adds",
+    "purchased": "Purchases"
 }, inplace=True)
 
-df["visitors"] = df["pdp_views"]
-
-# CATEGORY FILTER
-selected_category = st.selectbox(
-    "Select Category",
-    ["All"] + list(df['category'].unique())
-)
-
-# FILTER DATA
-if selected_category != "All":
-    filtered_df = df[df['category'] == selected_category]
-else:
-    filtered_df = df
-
-# KPI CALCULATIONS
-total_visitors = filtered_df['visitors'].sum()
-total_purchases = filtered_df['purchases'].sum()
-total_carts = filtered_df['carts'].sum()
+# KPI Metrics
+total_purchases = summary["Purchases"].sum()
+total_cart = summary["Cart Adds"].sum()
 
 conversion_rate = round(
-    (total_purchases / total_visitors) * 100,
+    (total_purchases / total_cart) * 100,
     2
 )
 
-cart_abandonment = round(
-    ((total_carts - total_purchases) / total_carts) * 100,
-    2
-)
+col1, col2 = st.columns(2)
 
-revenue = (filtered_df['purchases'] * 1500).sum()
-
-# KPI CARDS
-col1, col2, col3, col4 = st.columns(4)
-
-col1.metric("Visitors", f"{total_visitors:,}")
+col1.metric("Total Purchases", total_purchases)
 col2.metric("Conversion Rate", f"{conversion_rate}%")
-col3.metric("Cart Abandonment", f"{cart_abandonment}%")
-col4.metric("Revenue", f"₹{revenue:,}")
 
-# TABLE
-st.subheader("Category Funnel Metrics")
+# Table
+st.subheader("Category Performance")
 
-st.dataframe(filtered_df)
+st.dataframe(summary)
 
-# BAR CHART
+# Chart
 fig = px.bar(
-    filtered_df,
+    summary,
     x="category",
-    y="purchases",
+    y="Purchases",
     title="Purchases by Category"
 )
 
 st.plotly_chart(fig)
-
-# FUNNEL CHART
-fig2 = px.funnel(
-    x=[
-        filtered_df['visitors'].sum(),
-        filtered_df['pdp_views'].sum(),
-        filtered_df['carts'].sum(),
-        filtered_df['purchases'].sum()
-    ],
-    y=[
-        "Visitors",
-        "PDP Views",
-        "Cart Adds",
-        "Purchases"
-    ]
-)
-
-st.plotly_chart(fig2)
-
-# BUSINESS INSIGHTS
-st.header("Key Business Insights")
-
-st.markdown("""
-- Shirts contribute highest purchases across catalog.
-- Footwear shows lowest conversion contribution.
-- Cart abandonment exceeds 60%, indicating recovery opportunity.
-- Cargo and Jeans categories drive strong engagement.
-- Stockouts may be reducing purchase completion in premium categories.
-""")
