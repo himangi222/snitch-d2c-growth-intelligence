@@ -1,6 +1,5 @@
 import streamlit as st
 import pandas as pd
-import sqlite3
 import plotly.express as px
 
 # PAGE CONFIG
@@ -13,21 +12,25 @@ st.set_page_config(
 st.title("Snitch Growth Intelligence Dashboard")
 
 # DATABASE CONNECTION
-conn = sqlite3.connect("snitch.db")
+
 
 # SQL QUERY
-query = """
-SELECT
-    category,
-    COUNT(*) as visitors,
-    SUM(viewed_pdp) as pdp_views,
-    SUM(added_to_cart) as carts,
-    SUM(purchased) as purchases
-FROM funnel
-GROUP BY category
-"""
 
-df = pd.read_sql(query, conn)
+df = pd.read_csv("funnel_data.csv")
+
+df = df.groupby("category").agg({
+    "viewed_pdp": "sum",
+    "added_to_cart": "sum",
+    "purchased": "sum"
+}).reset_index()
+
+df.rename(columns={
+    "viewed_pdp": "pdp_views",
+    "added_to_cart": "carts",
+    "purchased": "purchases"
+}, inplace=True)
+
+df["visitors"] = df["pdp_views"]
 
 # CATEGORY FILTER
 selected_category = st.selectbox(
