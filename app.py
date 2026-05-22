@@ -13,7 +13,7 @@ st.set_page_config(
 st.title("Snitch Growth Intelligence Dashboard")
 
 # DATABASE CONNECTION
-conn = sqlite3.connect("data/snitch.db")
+conn = sqlite3.connect("snitch.db")
 
 # SQL QUERY
 query = """
